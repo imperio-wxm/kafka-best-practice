@@ -1,0 +1,8 @@
+
+kafka-java-api/\.idea/
+
+kafka-java-api/kafka-java-api\.iml
+
+kafka-java-api/simple-producer/target/
+
+kafka-java-api/simple-producer/simple-producer\.iml
