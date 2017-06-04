@@ -60,32 +60,34 @@ public class SimpleProducer {
         }
     }
 
-    public static void main(String[] args) {
+    private void start() {
         long index = 0L;
-        SimpleProducer simpleProducer = new SimpleProducer();
-        Producer producer = simpleProducer.getProducer();
-
+        Producer producer = getProducer();
         try {
-            while (!simpleProducer.closed.get()) {
+            while (!closed.get()) {
                 Message message = new Message();
                 message.setMessage("message=" + index);
                 message.setTopic(topic);
                 message.setEventTime(descFormat.get().format(new Date()));
 
-                simpleProducer.process(producer, Long.toString(index), JSON.toJSON(message).toString());
-                index++;
-
+                process(producer, Long.toString(index), JSON.toJSON(message).toString());
                 Thread.sleep(2000);
                 System.out.println(message);
 
                 if (index > 10) {
-                    simpleProducer.closed.set(true);
+                    closed.set(true);
                 }
+                index++;
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             producer.close();
         }
+    }
+
+    public static void main(String[] args) {
+        SimpleProducer simpleProducer = new SimpleProducer();
+        simpleProducer.start();
     }
 }
