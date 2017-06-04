@@ -70,7 +70,7 @@ public class SimpleProducer {
                 message.setTopic(topic);
                 message.setEventTime(descFormat.get().format(new Date()));
 
-                process(producer, Long.toString(index), JSON.toJSON(message).toString());
+                process(producer, Long.toString(System.currentTimeMillis()), JSON.toJSON(message).toString());
                 Thread.sleep(2000);
                 System.out.println(message);
 
