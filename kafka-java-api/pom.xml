@@ -7,6 +7,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>simple-producer</module>
+        <module>simple-consumer</module>
     </modules>
     <packaging>pom</packaging>
 
