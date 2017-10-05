@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,8 +36,11 @@ public class Main {
             }
         }, 0, 5000);*/
 
-        for (int i = 0; i < 2; i++) {
-            cachedThreadPool.submit(new ConsumerRunner(subscribedTopics, cacheTopic));
+       Map map = new ConcurrentHashMap();
+
+        for (int i = 0; i < 10; i++) {
+            //cachedThreadPool.submit(new ConsumerRunner(subscribedTopics, cacheTopic));
+            cachedThreadPool.submit(new MapTask(map));
         }
     }
 
