@@ -22,7 +22,7 @@ public class SimpleProducer {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final static String BOOTSTRAP_SERVERS = "192.168.1.112:9092";
     private final static String ACKS = "all";
-    private final static String topic = "simple-topic";
+    private final static String topic = "stream-test1";
 
     private static final ThreadLocal<SimpleDateFormat> descFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -74,9 +74,9 @@ public class SimpleProducer {
                 Thread.sleep(2000);
                 System.out.println(message);
 
-                if (index > 10) {
+              /*  if (index > 10) {
                     closed.set(true);
-                }
+                }*/
                 index++;
             }
         } catch (Exception e) {
