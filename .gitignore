@@ -10,3 +10,23 @@ kafka-java-api/simple-producer/simple-producer\.iml
 kafka-java-api/simple-consumer/target/
 
 kafka-java-api/simple-consumer/simple-consumer\.iml
+
+kafka-java-api/kafka-dynamic-subscribe/target/
+
+kafka-java-api/kafka-dynamic-subscribe/\.idea/
+
+kafka-java-api/kafka-dynamic-subscribe/kafka-dynamic-subscribe\.iml
+
+kafka-cassandra-sink/target/
+
+kafka-cassandra-sink/\.idea/
+
+*.iml
+
+kafka-java-api/simple-producer/\.idea/
+
+kafka-java-api/simple-producer/src/test/java/com/wxmimperio/kafka/AppTest\.java
+
+kafka-java-api/multithreading-consumer/target/
+
+kafka-java-api/logs/

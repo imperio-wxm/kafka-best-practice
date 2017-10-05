@@ -8,6 +8,7 @@
     <modules>
         <module>simple-producer</module>
         <module>simple-consumer</module>
+        <module>multithreading-consumer</module>
     </modules>
     <packaging>pom</packaging>
 
