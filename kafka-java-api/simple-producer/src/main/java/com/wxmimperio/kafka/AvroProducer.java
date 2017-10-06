@@ -10,6 +10,7 @@ import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class AvroProducer {
         props.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         props.put(ProducerConfig.ACKS_CONFIG, ACKS);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
         return props;
     }
 
@@ -64,6 +65,8 @@ public class AvroProducer {
                 genericRecord.put("eventTime", descFormat.get().format(new Date()));
 
                 process(producer, getSerializedValue(schema, genericRecord));
+
+                Thread.sleep(2000);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -97,7 +100,7 @@ public class AvroProducer {
 
     public static void main(String[] args) throws Exception {
         AvroProducer avroProducer = new AvroProducer();
-        String path = "";
+        String path = "E:\\coding\\github\\kafka-best-practice\\kafka-java-api\\simple-producer\\src\\main\\resources\\test_schema.avsc";
         Schema schema = getSchema(path);
         avroProducer.start(schema);
     }
