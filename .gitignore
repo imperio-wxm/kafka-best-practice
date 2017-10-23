@@ -30,3 +30,5 @@ kafka-java-api/simple-producer/src/test/java/com/wxmimperio/kafka/AppTest\.java
 kafka-java-api/multithreading-consumer/target/
 
 kafka-java-api/logs/
+
+\.idea/
