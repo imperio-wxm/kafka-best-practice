@@ -32,3 +32,5 @@ kafka-java-api/multithreading-consumer/target/
 kafka-java-api/logs/
 
 \.idea/
+
+demo-for-documents/streams-wordcount/target/
