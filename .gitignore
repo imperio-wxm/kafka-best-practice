@@ -34,3 +34,5 @@ kafka-java-api/logs/
 \.idea/
 
 demo-for-documents/streams-wordcount/target/
+
+demo-for-documents/logs/
