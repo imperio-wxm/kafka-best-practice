@@ -7,17 +7,18 @@ import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.KeyValueStore;
 
+import java.nio.charset.Charset;
 import java.util.Locale;
 
 /**
  * Created by wxmimperio on 2017/11/5.
  */
-public class WordCountProcessor implements Processor<String, String>, ProcessorSupplier {
+public class WordCountProcessor implements Processor<byte[], byte[]>, ProcessorSupplier {
     private ProcessorContext context;
     private KeyValueStore<String, Integer> kvStore;
 
     @Override
-    public Processor<String, String> get() {
+    public Processor<byte[], byte[]> get() {
         return new WordCountProcessor();
     }
 
@@ -29,8 +30,8 @@ public class WordCountProcessor implements Processor<String, String>, ProcessorS
     }
 
     @Override
-    public void process(String key, String value) {
-        String[] words = value.toLowerCase(Locale.getDefault()).split(" ");
+    public void process(byte[] key, byte[] value) {
+        String[] words = new String(value, Charset.forName("UTF-8")).toLowerCase(Locale.getDefault()).split(" ");
 
         for (String word : words) {
             Integer oldValue = this.kvStore.get(word);
@@ -50,7 +51,7 @@ public class WordCountProcessor implements Processor<String, String>, ProcessorS
             while (iterator.hasNext()) {
                 KeyValue<String, Integer> entry = iterator.next();
                 System.out.println("[" + entry.key + ", " + entry.value + "]");
-                context.forward(entry.key, entry.value.toString());
+                context.forward(entry.key.getBytes(), entry.value.toString().getBytes());
             }
         }
     }
