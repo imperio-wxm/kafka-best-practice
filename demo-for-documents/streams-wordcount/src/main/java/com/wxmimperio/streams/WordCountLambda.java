@@ -6,14 +6,9 @@ import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KStreamBuilder;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.ValueMapper;
 
-import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Properties;
-import java.util.regex.Pattern;
 
 /**
  * Created by wxmimperio on 2017/11/6.
@@ -26,31 +21,22 @@ public class WordCountLambda {
         streamsConfiguration.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "192.168.1.112:9092");
         streamsConfiguration.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 10 * 1000);
         streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
+        streamsConfiguration.put(StreamsConfig.KEY_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
+        streamsConfiguration.put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
 
-        final Serde<byte[]> stringSerde = Serdes.ByteArray();
+        final Serde<String> stringSerde = Serdes.String();
         final Serde<Long> longSerde = Serdes.Long();
 
         final KStreamBuilder builder = new KStreamBuilder();
+        final KStream<String, String> textLines = builder.stream(stringSerde, stringSerde, "wordcount-input");
 
-        final KStream<byte[], byte[]> textLines = builder.stream("wordcount-input");
+        final KStream<String, Long> wordCounts = textLines
+                .flatMapValues(value -> Arrays.asList(value.toLowerCase().split("\\W+")))
+                .groupBy((key, value) -> value)
+                .count("Counts")
+                .toStream();
 
-        final Pattern pattern = Pattern.compile("\\W+", Pattern.UNICODE_CHARACTER_CLASS);
-
-        final KTable<String, Long> wordCounts = textLines
-                .flatMapValues(new ValueMapper<byte[], Iterable<String>>() {
-                    @Override
-                    public Iterable<String> apply(byte[] value) {
-                        return Arrays.asList(
-                                new String(value, Charset.forName("UTF-8"))
-                                        .toLowerCase(Locale.getDefault())
-                                        .split(" ")
-                        );
-                    }
-                })
-                .groupBy((key, word) -> word)
-                .count("Counts");
-
-        wordCounts.to("wordcount-output");
+        wordCounts.to(stringSerde, longSerde, "wordcount-output1");
 
         final KafkaStreams streams = new KafkaStreams(builder, streamsConfiguration);
 
@@ -58,6 +44,5 @@ public class WordCountLambda {
         streams.start();
 
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
-
     }
 }
