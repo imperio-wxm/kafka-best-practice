@@ -20,6 +20,7 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -30,9 +31,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class AvroProducer {
     private static final Logger LOG = LoggerFactory.getLogger(SimpleProducer.class);
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private final static String BOOTSTRAP_SERVERS = "192.168.1.112:9092";
+    private final static String BOOTSTRAP_SERVERS = "10.128.74.83:9092";
     private final static String ACKS = "all";
-    private final static String topic = "stream-test1";
+    private final static String topic = "wxm_test_avro";
 
     private static final ThreadLocal<SimpleDateFormat> descFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -60,9 +61,12 @@ public class AvroProducer {
         try {
             while (!closed.get()) {
                 GenericRecord genericRecord = new GenericData.Record(schema);
+                UUID uuid = UUID.randomUUID();
+                int game_id = (int) (Math.random() * 100 + 1);
+                genericRecord.put("message_key", uuid.toString());
                 genericRecord.put("message", "message=" + index);
-                genericRecord.put("topic", topic);
-                genericRecord.put("eventTime", descFormat.get().format(new Date()));
+                genericRecord.put("event_time", descFormat.get().format(new Date()));
+                genericRecord.put("game_id", game_id);
 
                 process(producer, getSerializedValue(schema, genericRecord));
 
@@ -89,7 +93,7 @@ public class AvroProducer {
         final ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(topic, null, value);
         Future<RecordMetadata> future = producer.send(record);
         try {
-            LOG.info("Topic = {}, Offset = {}, Partition = {}", future.get().toString(), future.get().offset(), future.get().partition());
+            LOG.info("Offset = {}, Partition = {}", future.get().offset(), future.get().partition());
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
@@ -100,7 +104,7 @@ public class AvroProducer {
 
     public static void main(String[] args) throws Exception {
         AvroProducer avroProducer = new AvroProducer();
-        String path = "E:\\coding\\github\\kafka-best-practice\\kafka-java-api\\simple-producer\\src\\main\\resources\\test_schema.avsc";
+        String path = "D:\\d_backup\\github\\kafka-best-practice\\kafka-java-api\\simple-producer\\src\\main\\resources\\wxm_test_avro.avsc";
         Schema schema = getSchema(path);
         avroProducer.start(schema);
     }
