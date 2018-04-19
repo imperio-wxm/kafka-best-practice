@@ -5,20 +5,19 @@ import com.google.gson.JsonParser;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scala.collection.mutable.StringBuilder;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MainKafka {
@@ -55,9 +54,10 @@ public class MainKafka {
         return new KafkaProducer<String, String>(props());
     }
 
-    private static void process(Producer producer, byte[] key, byte[] value, String topic) {
+    private static void process(Producer producer, byte[] key, byte[] value, String topic) throws Exception {
         final ProducerRecord<byte[], byte[]> record = new ProducerRecord<byte[], byte[]>(topic, key, value);
-        producer.send(record);
+        Future<RecordMetadata> future = producer.send(record);
+        future.get().partition();
     }
 
     public static void SendData() throws Exception {
@@ -66,12 +66,16 @@ public class MainKafka {
         String path = "D:\\d_backup\\github\\kafka-best-practice\\kafka-java-api\\simple-producer\\src\\main\\resources\\wxm_test_avro.avsc";
         Schema schema = getSchema(path);
         try {
-            while (true) {
+            while (index < 1000000) {
                 JsonObject jsonMessage = new JsonObject();
 
                 UUID uuid = UUID.randomUUID();
+                String uuidStr = uuid.toString();
+                String nanoTime = new StringBuilder(String.valueOf(System.nanoTime())).reverse().substring(0, 4) + "-";
+                String key = uuidStr.substring(0, 4) + nanoTime + uuidStr.substring(9, uuidStr.length());
+
                 int game_id = (int) (Math.random() * 100 + 1);
-                jsonMessage.addProperty("message_key", uuid.toString());
+                jsonMessage.addProperty("message_key", index);
                 jsonMessage.addProperty("message", "message=" + index);
                 jsonMessage.addProperty("event_time", descFormat.get().format(new Date()));
                 jsonMessage.addProperty("game_id", game_id);
@@ -81,7 +85,7 @@ public class MainKafka {
                 process(producer, uuid.toString().getBytes(), SchemaHelper.serialize(records, schema), schema.getName());
 
                 System.out.println(jsonMessage.toString());
-                Thread.sleep(2000);
+                //Thread.sleep(1);
                 index++;
             }
         } catch (Exception e) {

@@ -33,7 +33,7 @@ public class AvroProducer {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final static String BOOTSTRAP_SERVERS = "10.128.74.83:9092";
     private final static String ACKS = "all";
-    private final static String topic = "wxm_test_avro";
+    private final static String topic = "phoenix_test1";
 
     private static final ThreadLocal<SimpleDateFormat> descFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -61,16 +61,17 @@ public class AvroProducer {
         try {
             while (!closed.get()) {
                 GenericRecord genericRecord = new GenericData.Record(schema);
-                UUID uuid = UUID.randomUUID();
-                int game_id = (int) (Math.random() * 100 + 1);
-                genericRecord.put("message_key", uuid.toString());
-                genericRecord.put("message", "message=" + index);
+                genericRecord.put("cost", index * 10);
+                genericRecord.put("api", "api=" + index);
+                genericRecord.put("flowId", index);
                 genericRecord.put("event_time", descFormat.get().format(new Date()));
-                genericRecord.put("game_id", game_id);
+
+                System.out.println(genericRecord.toString());
 
                 process(producer, getSerializedValue(schema, genericRecord));
 
                 Thread.sleep(2000);
+                index++;
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -90,7 +91,7 @@ public class AvroProducer {
     }
 
     private void process(Producer producer, byte[] value) {
-        final ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(topic, null, value);
+        final ProducerRecord<String, byte[]> record = new ProducerRecord<String, byte[]>(topic, UUID.randomUUID().toString(), value);
         Future<RecordMetadata> future = producer.send(record);
         try {
             LOG.info("Offset = {}, Partition = {}", future.get().offset(), future.get().partition());
@@ -104,7 +105,7 @@ public class AvroProducer {
 
     public static void main(String[] args) throws Exception {
         AvroProducer avroProducer = new AvroProducer();
-        String path = "D:\\d_backup\\github\\kafka-best-practice\\kafka-java-api\\simple-producer\\src\\main\\resources\\wxm_test_avro.avsc";
+        String path = "D:\\d_backup\\github\\kafka-best-practice\\kafka-java-api\\simple-producer\\src\\main\\resources\\phoenix_test1.avsc";
         Schema schema = getSchema(path);
         avroProducer.start(schema);
     }
