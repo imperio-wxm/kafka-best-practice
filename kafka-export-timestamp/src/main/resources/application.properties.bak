@@ -1,0 +1,5 @@
+bootstrap.servers.config=
+schema.reg=
+
+hdfs.resource.core-site=/etc/hadoop/conf/core-site.xml
+hdfs.resource.hdfs-site=/etc/hadoop/conf/hdfs-site.xml
