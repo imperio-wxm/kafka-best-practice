@@ -1,10 +1,13 @@
 package com.wxmimperio.kafka.export;
 
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
 import java.util.Map;
@@ -47,17 +50,19 @@ public class ToSequenceFile implements BaseTo {
     }
 
     @Override
-    public void writeTo(Map<String, String> message) {
-        message.forEach((k, v) -> {
-            try {
-                if (!StringUtils.isEmpty(v)) {
-                    writer.append(new Text(k), new Text(v.substring(0, v.length() - 1)));
-                    writer.sync();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+        StringBuilder message = new StringBuilder();
+        for (Schema.Field field : gr.getSchema().getFields()) {
+            message.append(gr.get(field.name()) == null ? "" : gr.get(field.name()).toString()).append("\t");
+        }
+        try {
+            if (!StringUtils.isEmpty(new String(record.value(), "UTF-8"))) {
+                writer.append(new Text(record.key()), new Text(message.substring(0, message.length() - 1)));
+                writer.sync();
             }
-        });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
