@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.util.Map;
 
 public interface BaseTo {
-    void close() throws IOException;
+    void close() throws Exception;
 
-    void initWriter(String topicName, String path) throws IOException;
+    void initWriter(String topicName, String path) throws Exception;
 
-    void writeTo(ConsumerRecord<String, byte[]> record,GenericRecord gr);
+    void writeTo(ConsumerRecord<String, byte[]> record,GenericRecord gr) throws Exception;
 }

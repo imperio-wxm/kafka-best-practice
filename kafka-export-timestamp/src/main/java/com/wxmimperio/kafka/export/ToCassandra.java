@@ -56,7 +56,7 @@ public class ToCassandra implements BaseTo {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         if (batchStatement.size() > 0) {
             executeStatement();
         }
@@ -65,12 +65,12 @@ public class ToCassandra implements BaseTo {
     }
 
     @Override
-    public void initWriter(String topicName, String path) throws IOException {
+    public void initWriter(String topicName, String path) throws Exception {
         preparedStatement = prepareBatch(schema);
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
         List<Object> message = prepareData(record, gr, 1);
         batchStatement.add(preparedStatement.bind(message.toArray()));
         if (batchStatement.size() % 1000 == 0) {

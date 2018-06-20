@@ -32,7 +32,7 @@ public class ToSequenceFile implements BaseTo {
     }
 
     @Override
-    public void initWriter(String topicName, String tempPath) throws IOException {
+    public void initWriter(String topicName, String tempPath) throws Exception {
         String fileName = topicName + "_seq_" + System.currentTimeMillis();
         String finalPath = tempPath.replaceAll("\\$\\{topic\\}", fileName) + "/" + fileName;
         Path path = new Path(finalPath);
@@ -50,23 +50,19 @@ public class ToSequenceFile implements BaseTo {
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
         StringBuilder message = new StringBuilder();
         for (Schema.Field field : gr.getSchema().getFields()) {
             message.append(gr.get(field.name()) == null ? "" : gr.get(field.name()).toString()).append("\t");
         }
-        try {
-            if (!StringUtils.isEmpty(new String(record.value(), "UTF-8"))) {
-                writer.append(new Text(record.key()), new Text(message.substring(0, message.length() - 1)));
-                writer.sync();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (!StringUtils.isEmpty(new String(record.value(), "UTF-8"))) {
+            writer.append(new Text(record.key()), new Text(message.substring(0, message.length() - 1)));
+            writer.sync();
         }
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         writer.close();
     }
 }

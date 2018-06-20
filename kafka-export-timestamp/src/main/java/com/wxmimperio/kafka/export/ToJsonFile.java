@@ -32,13 +32,13 @@ public class ToJsonFile implements BaseTo {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         outputStream.close();
         fs.close();
     }
 
     @Override
-    public void initWriter(String topicName, String tempPath) throws IOException {
+    public void initWriter(String topicName, String tempPath) throws Exception {
         String fileName = topicName + "_json_" + System.currentTimeMillis();
         String finalPath = tempPath.replaceAll("\\$\\{topic\\}", fileName) + "/" + fileName;
         this.fs = FileSystem.get(conf);
@@ -46,15 +46,11 @@ public class ToJsonFile implements BaseTo {
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
         JsonObject jsonObject = new JsonObject();
         for (Schema.Field field : gr.getSchema().getFields()) {
             jsonObject.addProperty(field.name(), gr.get(field.name()) == null ? "" : gr.get(field.name()).toString());
         }
-        try {
-            outputStream.write((jsonObject.toString() + "\n").getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        outputStream.write((jsonObject.toString() + "\n").getBytes());
     }
 }

@@ -37,7 +37,7 @@ public class ToTxtFile implements BaseTo {
     }
 
     @Override
-    public void initWriter(String topicName, String tempPath) throws IOException {
+    public void initWriter(String topicName, String tempPath) throws Exception {
         String fileName = topicName + "_txt_" + System.currentTimeMillis();
         String finalPath = tempPath.replaceAll("\\$\\{topic\\}", fileName) + "/" + fileName;
         this.fs = FileSystem.get(conf);
@@ -45,15 +45,11 @@ public class ToTxtFile implements BaseTo {
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
         StringBuilder message = new StringBuilder();
         for (Schema.Field field : gr.getSchema().getFields()) {
             message.append(gr.get(field.name()) == null ? "" : gr.get(field.name()).toString()).append("\t");
         }
-        try {
-            outputStream.write((message.substring(0, message.length() - 1) + "\n").getBytes());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        outputStream.write((message.substring(0, message.length() - 1) + "\n").getBytes());
     }
 }

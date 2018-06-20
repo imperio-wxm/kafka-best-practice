@@ -47,47 +47,39 @@ public class ToPhoenix implements BaseTo {
     }
 
     @Override
-    public void close() throws IOException {
-        try {
-            if (count > 0) {
-                pst.executeBatch();
-                connection.commit();
-                count = 0L;
-            }
-            pst.close();
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
+    public void close() throws Exception {
+
+        if (count > 0) {
+            pst.executeBatch();
+            connection.commit();
+            count = 0L;
         }
+        pst.close();
+        connection.close();
+
     }
 
     @Override
-    public void initWriter(String topicName, String path) throws IOException {
-        try {
-            this.sql = getPreparedSql(schema);
-            pst = connection.prepareStatement(sql);
-            connection.setAutoCommit(false);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    public void initWriter(String topicName, String path) throws Exception {
+        this.sql = getPreparedSql(schema);
+        pst = connection.prepareStatement(sql);
+        connection.setAutoCommit(false);
+
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
-        try {
-            pst = formatData(sql, pst, schema, gr, record);
-            if (count % 10000 == 0) {
-                pst.executeBatch();
-                connection.commit();
-                count = 0L;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
+        pst = formatData(sql, pst, schema, gr, record);
+        if (count % 10000 == 0) {
+            pst.executeBatch();
+            connection.commit();
+            count = 0L;
         }
+
     }
 
     private String getPreparedSql(Schema schema) {
-        String dbName = "";
+        String dbName = "default";
         if (!StringUtils.isEmpty(schema.getProp("db"))) {
             JsonObject dbInfoJson = new JsonParser().parse(schema.getProp("db")).getAsJsonObject();
             for (JsonElement dbInfo : dbInfoJson.get("identifiers").getAsJsonArray()) {

@@ -169,31 +169,24 @@ class ConsumerByTimestamp {
                         System.out.println(tp + " is finished.");
                         endOffsets.remove(tp);
                     }
-                    try {
-                        byte[] buffer = record.value();
-                        BinaryDecoder binaryEncoder = DecoderFactory.get().binaryDecoder(buffer, null);
-                        GenericRecord gr = readers.get(record.topic()).read(null, binaryEncoder);
 
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                        long eventTime = Timestamp.valueOf(LocalDateTime.parse(gr.get("event_time").toString(), formatter)).getTime();
-                        if (eventTime >= startTS && eventTime < endTS) {
+                    byte[] buffer = record.value();
+                    BinaryDecoder binaryEncoder = DecoderFactory.get().binaryDecoder(buffer, null);
+                    GenericRecord gr = readers.get(record.topic()).read(null, binaryEncoder);
 
-                            assert baseTo != null;
-                            baseTo.writeTo(record, gr);
-
-                            count++;
-                            if (count % 10000 == 0 || (System.currentTimeMillis() - lastPrint) > 10000) {
-                                LOG.info("Count = " + count + ", " + record.topic() + " ----- " + gr.get("event_time"));
-                                lastPrint = System.currentTimeMillis();
-                            }
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    long eventTime = Timestamp.valueOf(LocalDateTime.parse(gr.get("event_time").toString(), formatter)).getTime();
+                    if (eventTime >= startTS && eventTime < endTS) {
+                        baseTo.writeTo(record, gr);
+                        count++;
+                        if (count % 10000 == 0 || (System.currentTimeMillis() - lastPrint) > 10000) {
+                            LOG.info("Count = " + count + ", " + record.topic() + " ----- " + gr.get("event_time"));
+                            lastPrint = System.currentTimeMillis();
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
                 }
             }
         } finally {
-            assert baseTo != null;
             baseTo.close();
         }
         LOG.info("Finish recovering " + topic + " .... Count = " + count + ", Cost = " + (System.currentTimeMillis() - ts) + "ms");

@@ -41,7 +41,7 @@ public class ToOrcFile implements BaseTo {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         if (batch.size > 0) {
             writer.addRowBatch(batch);
             batch.reset();
@@ -50,7 +50,7 @@ public class ToOrcFile implements BaseTo {
     }
 
     @Override
-    public void initWriter(String topicName, String tempPath) throws IOException {
+    public void initWriter(String topicName, String tempPath) throws Exception {
         String fileName = topicName + "_orc_" + System.currentTimeMillis();
         String finalPath = tempPath.replaceAll("\\$\\{topic\\}", fileName) + "/" + fileName;
         this.orcSchema = getOrcSchema();
@@ -62,7 +62,7 @@ public class ToOrcFile implements BaseTo {
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
         Object[] temp = new Object[gr.getSchema().getFields().size()];
         for (int i = 0; i < gr.getSchema().getFields().size(); i++) {
             temp[i] = gr.get(gr.getSchema().getFields().get(i).name()) == null ? "" : gr.get(gr.getSchema().getFields().get(i).name()).toString();

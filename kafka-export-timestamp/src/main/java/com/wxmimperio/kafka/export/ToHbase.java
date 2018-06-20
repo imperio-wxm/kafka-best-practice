@@ -10,7 +10,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 
 public class ToHbase implements BaseTo {
@@ -21,7 +20,7 @@ public class ToHbase implements BaseTo {
     private List<JSONObject> result = Lists.newArrayList();
 
     @Override
-    public void close() throws IOException {
+    public void close() throws Exception {
         if (result.size() > 0) {
             putData();
         }
@@ -29,13 +28,13 @@ public class ToHbase implements BaseTo {
     }
 
     @Override
-    public void initWriter(String topicName, String path) throws IOException {
+    public void initWriter(String topicName, String path) throws Exception {
         this.manager = new HBaseClientManager();
         this.hBaseClient = manager.createHBaseClient(topicName);
     }
 
     @Override
-    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
+    public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) throws Exception {
         JSONObject jsonObject = new JSONObject();
         for (Schema.Field field : gr.getSchema().getFields()) {
             jsonObject.put(field.name(), gr.get(field.name()) == null ? "" : gr.get(field.name()).toString());
@@ -46,14 +45,9 @@ public class ToHbase implements BaseTo {
         }
     }
 
-    private void putData() {
-        try {
-            hBaseClient.put(result);
-            LOG.info("Put data size = " + result.size());
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            result.clear();
-        }
+    private void putData() throws Exception {
+        hBaseClient.put(result);
+        LOG.info("Put data size = " + result.size());
+        result.clear();
     }
 }
