@@ -138,6 +138,8 @@ class ConsumerByTimestamp {
                 baseTo.initWriter(topic, path);
                 break;
             case PHOENIX:
+                baseTo = new ToPhoenix(getSchemaFromRegistry(topic));
+                baseTo.initWriter(topic, path);
                 break;
             case ORC:
                 baseTo = new ToOrcFile(getSchemaFromRegistry(topic));

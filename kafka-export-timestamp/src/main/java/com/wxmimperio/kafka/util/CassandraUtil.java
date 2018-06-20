@@ -85,8 +85,7 @@ public class CassandraUtil {
                         continue;
                     }
                 }
-                throw new Exception(
-                        "No match type for the datum: " + datum + ", the valid types are: " + schema.getTypes());
+                throw new Exception("No match type for the datum: " + datum + ", the valid types are: " + schema.getTypes());
             case STRING:
                 return datum;
             case BYTES:
