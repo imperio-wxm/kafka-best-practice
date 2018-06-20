@@ -4,8 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonParser;
 import com.wxmimperio.kafka.common.WriteType;
-import com.wxmimperio.kafka.export.BaseTo;
-import com.wxmimperio.kafka.export.ToSequenceFile;
+import com.wxmimperio.kafka.export.*;
 import com.wxmimperio.kafka.util.HttpClientUtil;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -22,6 +21,8 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -31,6 +32,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 class ConsumerByTimestamp {
+    private static final Logger LOG = LoggerFactory.getLogger(ConsumerByTimestamp.class);
 
     /**
      * 最大延迟：从指定start、end time 向前、后推的时间
@@ -100,7 +102,7 @@ class ConsumerByTimestamp {
             String schema = new JsonParser().parse(subject).getAsJsonObject().get("schema").getAsString();
             return new Schema.Parser().parse(schema);
         } finally {
-            System.out.println("name = " + name);
+            LOG.info("name = " + name);
         }
     }
 
@@ -124,10 +126,22 @@ class ConsumerByTimestamp {
                 baseTo.initWriter(topic, path);
                 break;
             case TXT:
+                baseTo = new ToTxtFile();
+                baseTo.initWriter(topic, path);
                 break;
             case JSON:
+                baseTo = new ToJsonFile();
+                baseTo.initWriter(topic, path);
                 break;
             case CASSANDRA:
+                baseTo = new ToCassandra(getSchemaFromRegistry(topic));
+                baseTo.initWriter(topic, path);
+                break;
+            case PHOENIX:
+                break;
+            case ORC:
+                break;
+            case HBASE:
                 break;
             default:
                 throw new RuntimeException("Type not exists!");
@@ -157,25 +171,18 @@ class ConsumerByTimestamp {
                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                         long eventTime = Timestamp.valueOf(LocalDateTime.parse(gr.get("event_time").toString(), formatter)).getTime();
                         if (eventTime >= startTS && eventTime < endTS) {
-                            StringBuilder message = new StringBuilder();
-                            for (Schema.Field field : gr.getSchema().getFields()) {
-                                message.append(gr.get(field.name()) == null ? "" : gr.get(field.name()).toString()).append("\t");
-                            }
-
-                            //TODO
-                            Map<String, String> messageMap = Maps.newHashMap();
-                            messageMap.put(record.key(), message.toString());
 
                             assert baseTo != null;
-                            baseTo.writeTo(messageMap);
+                            baseTo.writeTo(record, gr);
 
                             count++;
                             if (count % 10000 == 0 || (System.currentTimeMillis() - lastPrint) > 10000) {
-                                System.out.println("Count = " + count + ", " + record.topic() + " ----- " + gr.get("event_time"));
+                                LOG.info("Count = " + count + ", " + record.topic() + " ----- " + gr.get("event_time"));
                                 lastPrint = System.currentTimeMillis();
                             }
                         }
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -183,6 +190,6 @@ class ConsumerByTimestamp {
             assert baseTo != null;
             baseTo.close();
         }
-        System.out.println("Finish recovering " + topic + " .... Count = " + count + ", Cost = " + (System.currentTimeMillis() - ts) + "ms");
+        LOG.info("Finish recovering " + topic + " .... Count = " + count + ", Cost = " + (System.currentTimeMillis() - ts) + "ms");
     }
 }

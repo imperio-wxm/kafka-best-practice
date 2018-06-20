@@ -1,6 +1,8 @@
 package com.wxmimperio.kafka;
 
 import com.wxmimperio.kafka.common.WriteType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -8,6 +10,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class Application {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) throws Exception {
 
@@ -26,7 +30,7 @@ public class Application {
         ConsumerByTimestamp consumerByTimestamp = new ConsumerByTimestamp();
 
         for (String topic : topics.split(",")) {
-            System.out.println("Start processing " + topic);
+            LOG.info("Start processing " + topic);
             consumerByTimestamp.export(topic, startTS, endTS, writeType, path);
         }
     }

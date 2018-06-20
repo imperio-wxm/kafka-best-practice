@@ -1,5 +1,8 @@
 package com.wxmimperio.kafka.export;
 
+import org.apache.avro.generic.GenericRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -8,5 +11,5 @@ public interface BaseTo {
 
     void initWriter(String topicName, String path) throws IOException;
 
-    void writeTo(Map<String, String> messages);
+    void writeTo(ConsumerRecord<String, byte[]> record,GenericRecord gr);
 }
