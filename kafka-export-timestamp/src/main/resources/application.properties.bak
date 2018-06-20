@@ -3,3 +3,9 @@ schema.reg=
 
 hdfs.resource.core-site=/etc/hadoop/conf/core-site.xml
 hdfs.resource.hdfs-site=/etc/hadoop/conf/hdfs-site.xml
+
+cassandra.url=
+
+phoenix.query.url=jdbc:phoenix:
+phoenix.query.driver=org.apache.phoenix.jdbc.PhoenixDriver
+phoenix.query.dateFormatTimeZone=GMT+8:00
