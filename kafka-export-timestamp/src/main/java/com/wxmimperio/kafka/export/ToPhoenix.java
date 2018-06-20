@@ -25,6 +25,7 @@ public class ToPhoenix implements BaseTo {
     private PreparedStatement pst;
     private String sql;
     private Schema schema;
+    private Long count = 0L;
 
     public ToPhoenix(Schema schema) {
         initConfig();
@@ -48,6 +49,11 @@ public class ToPhoenix implements BaseTo {
     @Override
     public void close() throws IOException {
         try {
+            if (count > 0) {
+                pst.executeBatch();
+                connection.commit();
+                count = 0L;
+            }
             pst.close();
             connection.close();
         } catch (SQLException e) {
@@ -70,8 +76,11 @@ public class ToPhoenix implements BaseTo {
     public void writeTo(ConsumerRecord<String, byte[]> record, GenericRecord gr) {
         try {
             pst = formatData(sql, pst, schema, gr, record);
-            pst.executeBatch();
-            connection.commit();
+            if (count % 10000 == 0) {
+                pst.executeBatch();
+                connection.commit();
+                count = 0L;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -191,6 +200,7 @@ public class ToPhoenix implements BaseTo {
                 index++;
             }
             pst.addBatch();
+            count++;
         }
         return pst;
     }

@@ -146,6 +146,8 @@ class ConsumerByTimestamp {
                 baseTo.initWriter(topic, path);
                 break;
             case HBASE:
+                baseTo = new ToHbase();
+                baseTo.initWriter(topic, path);
                 break;
             default:
                 throw new RuntimeException("Type not exists!");
