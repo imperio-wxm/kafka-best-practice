@@ -140,6 +140,8 @@ class ConsumerByTimestamp {
             case PHOENIX:
                 break;
             case ORC:
+                baseTo = new ToOrcFile(getSchemaFromRegistry(topic));
+                baseTo.initWriter(topic, path);
                 break;
             case HBASE:
                 break;
