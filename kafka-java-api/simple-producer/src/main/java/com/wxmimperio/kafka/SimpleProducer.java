@@ -1,14 +1,20 @@
 package com.wxmimperio.kafka;
 
 import com.alibaba.fastjson.JSON;
+import com.google.common.collect.Lists;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.record.AbstractRecords;
+import org.apache.kafka.common.record.CompressionType;
+import org.apache.kafka.common.serialization.ExtendedSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -21,8 +27,8 @@ public class SimpleProducer {
     private static final Logger LOG = LoggerFactory.getLogger(SimpleProducer.class);
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final static String BOOTSTRAP_SERVERS = "192.168.1.112:9092";
-    private final static String ACKS = "all";
-    private final static String topic = "stream-test1";
+    private final static String ACKS = "1";
+    private final static String topic = "test_producer_size";
 
     private static final ThreadLocal<SimpleDateFormat> descFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -36,9 +42,10 @@ public class SimpleProducer {
         props.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, BOOTSTRAP_SERVERS);
         props.put(ProducerConfig.ACKS_CONFIG, ACKS);
         props.put(ProducerConfig.RETRIES_CONFIG, 0);
-        props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
-        props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
-        props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        //props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
+        //props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
+        //props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
+        props.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, 50);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         return props;
@@ -60,6 +67,32 @@ public class SimpleProducer {
         }
     }
 
+    private void processBatch(Producer producer, List<ProducerRecord<String, String>> records) {
+        List<Future<RecordMetadata>> futures = new ArrayList<>(records.size());
+        final ExtendedSerializer<String> keySerializer = ExtendedSerializer.Wrapper.ensureExtended(new StringSerializer());
+        final ExtendedSerializer<String> valueSerializer = ExtendedSerializer.Wrapper.ensureExtended(new StringSerializer());
+        records.forEach(record -> {
+            byte[] serializedKey = keySerializer.serialize(record.topic(), record.headers(), record.key());
+            byte[] serializedValue = valueSerializer.serialize(record.topic(), record.headers(), record.value());
+            int serializedSize = AbstractRecords.estimateSizeInBytesUpperBound(
+                    (byte) 2, CompressionType.SNAPPY, serializedKey, serializedValue, record.headers().toArray()
+            );
+            LOG.info(serializedSize + "========");
+            futures.add(producer.send(record));
+        });
+        // Prevent linger.ms from holding the batch
+        producer.flush();
+        futures.forEach(future -> {
+            RecordMetadata recordMetadata = null;
+            try {
+                recordMetadata = future.get();
+                LOG.info("Topic = {}, Offset = {}, Partition = {}", recordMetadata.toString(), recordMetadata.offset(), recordMetadata.partition());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
     private void start() {
         long index = 0L;
         Producer producer = getProducer();
@@ -70,9 +103,10 @@ public class SimpleProducer {
                 message.setTopic(topic);
                 message.setEventTime(descFormat.get().format(new Date()));
 
-                process(producer, Long.toString(System.currentTimeMillis()), JSON.toJSON(message).toString());
+                //process(producer, Long.toString(System.currentTimeMillis()), JSON.toJSON(message).toString());
+                processBatch(producer, getBatchMsg(10));
                 Thread.sleep(2000);
-                System.out.println(message);
+                System.out.println(String.format("size = %s, msg = %s", message.toString().getBytes().length, message));
 
               /*  if (index > 10) {
                     closed.set(true);
@@ -84,6 +118,18 @@ public class SimpleProducer {
         } finally {
             producer.close();
         }
+    }
+
+    private List<ProducerRecord<String, String>> getBatchMsg(int size) {
+        List<ProducerRecord<String, String>> records = Lists.newArrayList();
+        for (int i = 0; i < size; i++) {
+            Message message = new Message();
+            message.setMessage("message=" + i);
+            message.setTopic(topic);
+            message.setEventTime(descFormat.get().format(new Date()));
+            records.add(new ProducerRecord<String, String>(topic, Long.toString(System.currentTimeMillis()), JSON.toJSON(message).toString()));
+        }
+        return records;
     }
 
     public static void main(String[] args) {
