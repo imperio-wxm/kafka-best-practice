@@ -4,8 +4,10 @@ import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.record.AbstractRecords;
 import org.apache.kafka.common.record.CompressionType;
+import org.apache.kafka.common.record.RecordBatch;
 import org.apache.kafka.common.serialization.ExtendedSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
@@ -75,9 +77,11 @@ public class SimpleProducer {
             byte[] serializedKey = keySerializer.serialize(record.topic(), record.headers(), record.key());
             byte[] serializedValue = valueSerializer.serialize(record.topic(), record.headers(), record.value());
             int serializedSize = AbstractRecords.estimateSizeInBytesUpperBound(
-                    (byte) 2, CompressionType.SNAPPY, serializedKey, serializedValue, record.headers().toArray()
+                    RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE, serializedKey, serializedValue, record.headers().toArray()
             );
-            LOG.info(serializedSize + "========");
+            if(serializedSize > (Integer) props().get(ProducerConfig.MAX_REQUEST_SIZE_CONFIG)) {
+                LOG.info(String.format("SerializedSize = %s bytes, Topic = %s, msg = %s", serializedSize, record.topic(), record.value()));
+            }
             futures.add(producer.send(record));
         });
         // Prevent linger.ms from holding the batch
@@ -88,7 +92,13 @@ public class SimpleProducer {
                 recordMetadata = future.get();
                 LOG.info("Topic = {}, Offset = {}, Partition = {}", recordMetadata.toString(), recordMetadata.offset(), recordMetadata.partition());
             } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                if (e instanceof ExecutionException && e.getCause() instanceof RecordTooLargeException) {
+                    RecordTooLargeException recordTooLargeException = (RecordTooLargeException) e.getCause();
+                    // recordTooLargeException == null
+                    System.out.println(recordTooLargeException.recordTooLargePartitions());
+                    // The message is 185 bytes when serialized which is larger than the maximum request size you have configured with the max.request.size configuration.
+                    System.out.println(recordTooLargeException.getLocalizedMessage());
+                }
             }
         });
     }
