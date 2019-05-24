@@ -79,8 +79,10 @@ public class SimpleProducer {
             int serializedSize = AbstractRecords.estimateSizeInBytesUpperBound(
                     RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE, serializedKey, serializedValue, record.headers().toArray()
             );
-            if(serializedSize > (Integer) props().get(ProducerConfig.MAX_REQUEST_SIZE_CONFIG)) {
-                LOG.info(String.format("SerializedSize = %s bytes, Topic = %s, msg = %s", serializedSize, record.topic(), record.value()));
+            if (serializedSize > (Integer) props().get(ProducerConfig.MAX_REQUEST_SIZE_CONFIG)) {
+                LOG.info(String.format("SerializedSize = %s bytes, Topic = %s, msg = %s, header = %s, key = %s",
+                        serializedSize, record.topic(), record.value(), record.headers(), record.key()
+                ));
             }
             futures.add(producer.send(record));
         });
