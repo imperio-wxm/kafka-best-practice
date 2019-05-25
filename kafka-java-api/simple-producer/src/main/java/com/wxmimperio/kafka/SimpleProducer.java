@@ -31,6 +31,8 @@ public class SimpleProducer {
     private final static String BOOTSTRAP_SERVERS = "192.168.1.112:9092";
     private final static String ACKS = "1";
     private final static String topic = "test_producer_size";
+    private final ExtendedSerializer<String> keySerializer = ExtendedSerializer.Wrapper.ensureExtended(new StringSerializer());
+    private final ExtendedSerializer<String> valueSerializer = ExtendedSerializer.Wrapper.ensureExtended(new StringSerializer());
 
     private static final ThreadLocal<SimpleDateFormat> descFormat = new ThreadLocal<SimpleDateFormat>() {
         @Override
@@ -69,21 +71,22 @@ public class SimpleProducer {
         }
     }
 
+    private void checkOverSerializedSize(ProducerRecord<String, String> record) {
+        byte[] serializedKey = keySerializer.serialize(record.topic(), record.headers(), record.key());
+        byte[] serializedValue = valueSerializer.serialize(record.topic(), record.headers(), record.value());
+        int serializedSize = AbstractRecords.estimateSizeInBytesUpperBound(
+                RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE, serializedKey, serializedValue, record.headers().toArray()
+        );
+        if (serializedSize > (Integer) props().get(ProducerConfig.MAX_REQUEST_SIZE_CONFIG)) {
+            LOG.warn(String.format("SerializedSize = %s bytes, Topic = %s, msg = %s, header = %s, key = %s",
+                    serializedSize, record.topic(), record.value(), record.headers(), record.key()
+            ));
+        }
+    }
     private void processBatch(Producer producer, List<ProducerRecord<String, String>> records) {
         List<Future<RecordMetadata>> futures = new ArrayList<>(records.size());
-        final ExtendedSerializer<String> keySerializer = ExtendedSerializer.Wrapper.ensureExtended(new StringSerializer());
-        final ExtendedSerializer<String> valueSerializer = ExtendedSerializer.Wrapper.ensureExtended(new StringSerializer());
         records.forEach(record -> {
-            byte[] serializedKey = keySerializer.serialize(record.topic(), record.headers(), record.key());
-            byte[] serializedValue = valueSerializer.serialize(record.topic(), record.headers(), record.value());
-            int serializedSize = AbstractRecords.estimateSizeInBytesUpperBound(
-                    RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE, serializedKey, serializedValue, record.headers().toArray()
-            );
-            if (serializedSize > (Integer) props().get(ProducerConfig.MAX_REQUEST_SIZE_CONFIG)) {
-                LOG.info(String.format("SerializedSize = %s bytes, Topic = %s, msg = %s, header = %s, key = %s",
-                        serializedSize, record.topic(), record.value(), record.headers(), record.key()
-                ));
-            }
+            checkOverSerializedSize(record);
             futures.add(producer.send(record));
         });
         // Prevent linger.ms from holding the batch
@@ -97,8 +100,9 @@ public class SimpleProducer {
                 if (e instanceof ExecutionException && e.getCause() instanceof RecordTooLargeException) {
                     RecordTooLargeException recordTooLargeException = (RecordTooLargeException) e.getCause();
                     // recordTooLargeException == null
-                    System.out.println(recordTooLargeException.recordTooLargePartitions());
+                    //System.out.println(recordTooLargeException.recordTooLargePartitions());
                     // The message is 185 bytes when serialized which is larger than the maximum request size you have configured with the max.request.size configuration.
+                    // TODO roll back and clean
                     System.out.println(recordTooLargeException.getLocalizedMessage());
                 }
             }
