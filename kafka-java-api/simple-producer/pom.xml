@@ -101,7 +101,7 @@
             </exclusions>
         </dependency>
 
-        <dependency>
+       <!-- <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-server</artifactId>
             <version>${hase.version}</version>
@@ -111,19 +111,19 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
             <version>${hase.version}</version>
-        </dependency>
+        </dependency>-->
 
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>0.10.1.1</version>
+            <version>1.0.0</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.11</artifactId>
-            <version>0.10.1.1</version>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.apache.avro/avro -->
