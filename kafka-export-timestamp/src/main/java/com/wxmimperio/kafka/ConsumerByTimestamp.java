@@ -149,6 +149,10 @@ class ConsumerByTimestamp {
                 baseTo = new ToHbase();
                 baseTo.initWriter(topic, path);
                 break;
+            case KUDU:
+                baseTo = new ToKudu();
+                baseTo.initWriter(topic, path);
+                break;
             default:
                 throw new RuntimeException("Type not exists!");
         }
